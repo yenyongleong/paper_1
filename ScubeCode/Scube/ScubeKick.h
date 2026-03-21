@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <bitset>
 #include <memory.h>
-#include <malloc.h>
+#include <cstdlib>
 #include <sys/time.h>
 #include "Scube.h"
 #include "../headers/HashFunction.h"
@@ -93,7 +93,7 @@ Scube(width, depth, fingerprint_length), kick_times(kick_times)
     // this->value = new basket[width * depth];
     // posix_memalign((void**)&(this->value), 64, sizeof(basket) * width * depth);		// 64-byte alignment of the requested space
     // this->value = (basket *) aligned_alloc(64, sizeof(basket) * width * depth);	    // 64-byte alignment of the requested space
-    this->value = (basket *) memalign(64, sizeof(basket) * width * depth);	            // 64-byte alignment of the requested space
+    posix_memalign((void**)&(this->value), 64, sizeof(basket) * width * depth);	    // 64-byte alignment of the requested space
     memset(value, 0, sizeof(basket) * width * depth);
 }
     

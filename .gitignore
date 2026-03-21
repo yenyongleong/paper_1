@@ -33,6 +33,12 @@
 
 .vscode
 
+# macOS
+.DS_Store
+
+# Python packages
+.pip_packages/
+
 *cmd*
 
 *.r

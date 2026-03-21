@@ -2,7 +2,7 @@
 #define _DegDetectorSlot2bit_H
 #include <iostream>
 #include <stdlib.h>
-#include <malloc.h>
+#include <cstdlib>
 #include <map>
 #include <set>
 #include <random>
@@ -75,8 +75,8 @@ DegDetector(matrix_width, matrix_depth), slot_num(slotNum), exp_deg(exp_deg), ig
     // posix_memalign((void**)&(this->in_slots), 64, sizeof(slot) * slotNum * SLOTROOM);		// 64-byte alignment of the requested space
     // this->out_slots = (slot *) aligned_alloc(64, sizeof(slot) * slotNum * SLOTROOM);		    // 64-byte alignment of the requested space
     // this->in_slots = (slot *) aligned_alloc(64, sizeof(slot) * slotNum * SLOTROOM);		    // 64-byte alignment of the requested space
-    this->out_slots = (slot *) memalign(64, sizeof(slot) * slotNum * SLOTROOM);		            // 64-byte alignment of the requested space
-    this->in_slots = (slot *) memalign(64, sizeof(slot) * slotNum * SLOTROOM);		            // 64-byte alignment of the requested space
+    posix_memalign((void**)&(this->out_slots), 64, sizeof(slot) * slotNum * SLOTROOM);		// 64-byte alignment of the requested space
+    posix_memalign((void**)&(this->in_slots), 64, sizeof(slot) * slotNum * SLOTROOM);		// 64-byte alignment of the requested space
     memset(this->out_slots, 0, sizeof(slot) * slotNum * SLOTROOM);
     memset(this->in_slots, 0, sizeof(slot) * slotNum * SLOTROOM);
 }
