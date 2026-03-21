@@ -1,0 +1,90 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\title{Theoretical Foundations of P-Scube}
+\author{}
+\date{}
+
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+
+\begin{document}
+
+\maketitle
+
+\section{Problem Formulation: The Utility-Privacy Tension}
+
+In a graph stream $\mathcal{G}$, the degree distribution typically follows a power-law: $\Pr[d_v = k] \propto k^{-\gamma}$. 
+Skew-aware summarization structures (like Scube) aim to minimize hash collisions by allocating resources $A_v$ (e.g., number of hash addresses) proportional to the estimated degree $\hat{d}_v$.
+
+\begin{definition}[Deterministic Resource Allocation (Original Scube)]
+In the original Scube, the resource allocation function is a deterministic step function:
+\begin{equation}
+    A_v = \max\left(2, \left\lceil \frac{\hat{d}_v}{\theta} \right\rceil \right)
+\end{equation}
+where $\theta$ is the capacity threshold of a single row/column, and $\hat{d}_v = c \times E_{R,L}$ is the estimated degree from the probabilistic counter.
+\end{definition}
+
+\begin{definition}[Extractability Advantage]
+An adversary $\mathcal{A}$ observes the allocated resources $A_v$ (either directly or via timing side-channels) and attempts to infer if node $v$ is a "Hub" (i.e., true degree $d_v > \tau$). 
+The \textbf{Extractability Advantage} is defined as:
+\begin{equation}
+    Adv(\mathcal{A}) = \left| \Pr[d_v > \tau \mid A_v] - \Pr[d_v > \tau] \right|
+\end{equation}
+\end{definition}
+
+\begin{theorem}[Tension]
+In a deterministic skew-aware summary, if $A_v$ strictly monotonically increases with $\hat{d}_v$, and the estimator $\hat{d}_v$ is unbiased, then for large $\tau$, $Adv(\mathcal{A}) \to 1 - \Pr[d_v > \tau]$. This means the adversary can perfectly extract hub nodes with near 100\% confidence.
+\end{theorem}
+
+\section{P-Scube Mechanism Design and Theoretical Guarantees}
+
+To mitigate this tension, P-Scube introduces two mechanisms that decouple the deterministic mapping while preserving the overall skew-aware utility.
+
+\subsection{Mechanism 1: Monotonic Noisy Promotion}
+To prevent state oscillation in a streaming environment, we cannot add pure random noise at every step. Instead, we bind the noise to the node's unique identifier (fingerprint/hash).
+
+Let $h(v)$ be the hash signature of node $v$. We generate a pseudo-random noise value $\eta_v$ drawn from a Laplace distribution:
+\begin{equation}
+    \eta_v \sim \text{Laplace}\left(0, \lambda \right)
+\end{equation}
+\textit{Implementation note: $\eta_v$ is deterministically generated using $h(v)$ as the seed, ensuring $\eta_v$ is constant for the same node across the entire stream.}
+
+The noisy estimated degree is:
+\begin{equation}
+    \tilde{d}_v = \hat{d}_v + \eta_v
+\end{equation}
+
+\subsection{Mechanism 2: Coarsened Resource Allocation}
+Instead of continuous expansion, we map the noisy degree to a set of discrete resource buckets $\mathcal{B} = \{B_1, B_2, \dots, B_k\}$ (e.g., $\{2, 4, 6\}$ addresses).
+\begin{equation}
+    A_v^* = \text{Bucketize}(\tilde{d}_v)
+\end{equation}
+where $\text{Bucketize}(x) = B_i$ if $T_{i-1} \le x < T_i$.
+
+\begin{theorem}[Degree Indistinguishability (Local Differential Privacy)]
+By combining Monotonic Noisy Promotion and Coarsened Allocation, P-Scube satisfies $\epsilon$-Degree Indistinguishability. 
+For any two nodes $u$ and $v$ whose true degrees differ by at most $\Delta$ (i.e., $|d_u - d_v| \le \Delta$), the probability that they are assigned to the same resource bucket $B_i$ satisfies:
+\begin{equation}
+    \frac{\Pr[A_u^* = B_i]}{\Pr[A_v^* = B_i]} \le e^{\epsilon}
+\end{equation}
+where $\epsilon = \frac{\Delta}{\lambda}$.
+\end{theorem}
+
+\begin{proof}[Proof Sketch]
+Since $\tilde{d} = \hat{d} + \eta$ and $\eta \sim \text{Laplace}(0, \lambda)$, the probability density function of $\tilde{d}$ satisfies the standard Differential Privacy property. The bucketization step (post-processing) does not increase the privacy budget $\epsilon$. Thus, the adversary cannot confidently distinguish between a node with degree $d$ and a node with degree $d + \Delta$, effectively hiding the exact rank of hub nodes and bounding $Adv(\mathcal{A})$.
+\end{proof}
+
+\section{Engineering Constraints for the Streaming Environment}
+
+\begin{enumerate}
+    \item \textbf{Monotonicity:} Because $\eta_v$ is fixed per node, as the true degree $d_v$ grows over time, the noisy degree $\tilde{d}_v$ grows monotonically. This guarantees that $A_v^*$ never decreases, which is a strict requirement for the Scube matrix (we cannot "shrink" a node's allocated addresses once edges are inserted).
+    \item \textbf{Low Overhead:} Generating $\eta_v$ via a fast hash-based pseudo-random number generator (PRNG) adds negligible latency compared to standard cryptographic DP mechanisms.
+\end{enumerate}
+
+\end{document}

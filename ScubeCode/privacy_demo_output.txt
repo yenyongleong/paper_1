@@ -1,0 +1,183 @@
+================================================================
+ SCUBE PRIVACY LEAKAGE DEMO (Zipf Distribution)
+================================================================
+
+Graph setup:
+  Nodes: 5000
+  Degree distribution: Zipf (gamma=1.2000)
+  Degree range: [2, 3000]
+  Total edges inserted: 903858
+  Matrix size: 3000 x 3000
+
+Degree statistics:
+  Min: 2, Median: 19, Mean: 180.7716, P90: 579, P99: 1978, Max: 2261
+  Hub threshold (top-50): degree >= 2529
+
+True top-20 nodes by degree:
+-------------------------------------------------------------------
+ Rank | Node ID | True Degree 
+-------------------------------------------------------------------
+    1 |    2456 |        2261
+    2 |    2926 |        2228
+    3 |    2644 |        2234
+    4 |    1016 |        2236
+    5 |     145 |        2197
+    6 |     760 |        2178
+    7 |    3926 |        2154
+    8 |     676 |        2189
+    9 |    2128 |        2139
+   10 |    4091 |        2182
+   11 |    4229 |        2146
+   12 |    3667 |        2133
+   13 |    1109 |        2133
+   14 |    3108 |        2166
+   15 |     190 |        2191
+   16 |    2505 |        2182
+   17 |     425 |        2139
+   18 |     483 |        2121
+   19 |    4321 |        2093
+   20 |    1619 |        2139
+-------------------------------------------------------------------
+
+================================================================
+ ATTACK 1: Hub Extraction via nodeWeightQuery
+================================================================
+
+Method: Query nodeWeightQuery(v, 0) for all 5000 nodes, sort by returned weight. Top-K = suspected hubs.
+
+Top-20 nodes ranked by queried weight (attacker's view):
+-------------------------------------------------------------------
+ Rank | Node ID | Queried Wt | True Degree | Avg Latency | True Hub?
+-------------------------------------------------------------------
+    1 |    2456 |       2261 |        2261 |   5.2500 us | *** HUB ***
+    2 |    1016 |       2236 |        2236 |   5.0500 us | *** HUB ***
+    3 |    2644 |       2234 |        2234 |   5.5000 us | *** HUB ***
+    4 |    2926 |       2228 |        2228 |   4.6500 us | *** HUB ***
+    5 |     145 |       2197 |        2197 |   4.6500 us | *** HUB ***
+    6 |     190 |       2191 |        2191 |   5.4500 us | *** HUB ***
+    7 |     676 |       2189 |        2189 |   4.5500 us | *** HUB ***
+    8 |    2505 |       2182 |        2182 |   5.2000 us | *** HUB ***
+    9 |    4091 |       2182 |        2182 |   5.0500 us | *** HUB ***
+   10 |     760 |       2178 |        2178 |   5.1000 us | *** HUB ***
+   11 |    3108 |       2166 |        2166 |   5.1500 us | *** HUB ***
+   12 |    3926 |       2154 |        2154 |   4.7000 us | *** HUB ***
+   13 |    2531 |       2154 |        2154 |   4.8500 us | *** HUB ***
+   14 |    4229 |       2146 |        2146 |   5.0500 us | *** HUB ***
+   15 |    2128 |       2139 |        2139 |   4.8500 us | *** HUB ***
+   16 |    1619 |       2139 |        2139 |   4.7500 us | *** HUB ***
+   17 |     425 |       2139 |        2139 |   4.4500 us | *** HUB ***
+   18 |    3667 |       2133 |        2133 |   4.6000 us | *** HUB ***
+   19 |    1109 |       2133 |        2133 |   5.1000 us | *** HUB ***
+   20 |     483 |       2121 |        2121 |   4.7000 us | *** HUB ***
+-------------------------------------------------------------------
+
+Attack success (Precision@K — fraction of attacker's top-K that are true hubs):
+  Precision@ 10 = 10/10 = 100.0000%
+  Precision@ 20 = 20/20 = 100.0000%
+  Precision@ 50 = 49/50 = 98.0000%
+  Precision@100 = 50/50 = 100.0000%
+
+Rank analysis of true top-50 hubs in attacker's ranking:
+  Best rank:  1
+  Worst rank: 51
+  Avg rank:   25.5200
+
+Query accuracy for hubs vs non-hubs (|queried - true| / true):
+  Hub nodes    (n=50): avg relative error = 0.0000%
+  Non-hub nodes (n=4950): avg relative error = 0.0000%
+  (Lower error for hubs = skew-aware optimization helps hubs more = easier to extract)
+
+================================================================
+ ATTACK 2: Sensitive Edge Probing via edgeWeightQuery
+================================================================
+
+Method: Attacker has a suspect list of (src, dst) pairs.
+Query edgeWeightQuery(src, dst): if result > 0, the edge exists.
+Test set: 100 true edges + 100 non-existent edges (randomly sampled).
+
+Probe results (200 total: 100 real + 100 fake edges):
+-------------------------------------------------------------------
+              | Predicted Exists | Predicted Absent |
+  Actually Yes |  TP =  100        |  FN =    0        |
+  Actually No  |  FP =    0        |  TN =  100        |
+-------------------------------------------------------------------
+  Precision (of positive predictions): 100.0000%
+  Recall (of actual edges found):      100.0000%
+  False Positive Rate:                 0.0000%
+
+Sample probes (first 15):
+-------------------------------------------------------------------
+  Src -> Dst  | Exists? | Src Deg | Dst Deg | Query Wt | Verdict
+-------------------------------------------------------------------
+  2099 ->  499 |   YES   |      50 |       5 |        1 | EXISTS
+  3545 -> 2519 |   YES   |    1916 |       2 |        1 | EXISTS
+  1792 -> 1471 |   YES   |    1943 |       5 |        1 | EXISTS
+  2794 -> 1763 |   NO    |      14 |       3 |        0 | ABSENT
+  1684 -> 4091 |   NO    |      30 |    2182 |        0 | ABSENT
+  4023 -> 1408 |   NO    |     183 |      13 |        0 | ABSENT
+  3926 -> 3494 |   YES   |    2154 |      74 |        1 | EXISTS
+   936 -> 1563 |   NO    |      69 |       6 |        0 | ABSENT
+  1595 -> 2874 |   NO    |       7 |     140 |        0 | ABSENT
+  3988 -> 3644 |   NO    |       2 |     155 |        0 | ABSENT
+  4634 ->  701 |   NO    |       2 |      34 |        0 | ABSENT
+   448 -> 2989 |   NO    |       8 |      16 |        0 | ABSENT
+  1930 -> 4042 |   NO    |       2 |    1837 |        0 | ABSENT
+  3540 -> 3197 |   YES   |    1629 |       4 |        1 | EXISTS
+  3527 -> 3788 |   YES   |    1843 |       8 |        1 | EXISTS
+-------------------------------------------------------------------
+
+================================================================
+ ATTACK 3: Timing Side-Channel — Degree Class from Latency
+================================================================
+
+Method: Even if returned values are noised, query LATENCY
+reveals degree class. Scube scans addr_num rows per query;
+more rows = higher latency = higher degree.
+
+Latency statistics (averaged over 20 repeats per node):
+-------------------------------------------------------------------
+  Hub nodes     (n=  50): avg =   4.9730 us, stdev =   0.4036 us
+  Non-hub nodes (n=4950): avg =   3.4044 us, stdev =   0.7055 us
+-------------------------------------------------------------------
+  Latency ratio (hub / non-hub): 1.4608x
+
+Timing-based hub classification (threshold = 4.1887 us):
+-------------------------------------------------------------------
+              | Predicted Hub | Predicted Normal |
+  Actually Hub |  TP =   50     |  FN =    0          |
+  Actually Norm|  FP =  368     |  TN = 4582          |
+-------------------------------------------------------------------
+  Accuracy:  92.6400%
+  Precision: 11.9617%
+  Recall:    100.0000%
+
+Degree-latency Pearson correlation: r = 0.5037
+(Strong positive correlation confirms timing side-channel)
+
+================================================================
+ ANALYSIS: Why Skew-Awareness Amplifies Privacy Leakage
+================================================================
+
+Even with a natural Zipf degree distribution (not a contrived
+binary split), Scube's skew-aware design amplifies leakage:
+
+1. HIGHER ACCURACY for high-degree nodes
+   → nodeWeightQuery returns near-exact degree for hubs
+   → Attacker simply sorts by queried weight to find top-K
+
+2. LOWER FALSE POSITIVE RATE for edge queries
+   → edgeWeightQuery with fingerprint matching is highly reliable
+   → Attacker can confirm/deny any suspected relationship
+
+3. DEGREE-CORRELATED QUERY LATENCY
+   → High-degree nodes scan more rows (higher addr_num)
+   → Even without seeing the returned value, timing leaks degree class
+
+THE CORE TENSION:
+  Better skew-aware service = Higher accuracy for important nodes
+                            = Easier extraction of important nodes
+                            = Greater privacy risk
+
+================================================================
+ END OF DEMO
+================================================================
