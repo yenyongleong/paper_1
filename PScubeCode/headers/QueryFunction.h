@@ -164,7 +164,12 @@ int insert(T& scube, string filename, int type, int data_interval) {		// int dat
 	int datanum = 0;
 	int newv = 0, oldv = 0;
 	int dn = 0;
+	string line;
 	while (!ifs.eof()) {
+		if (ifs.peek() == '%' || ifs.peek() == '#') {
+			getline(ifs, line);
+			continue;
+		}
 		if (type == 0) {
 			ifs >> s >> d >> w >> t;
 			scube.insert(to_string(s), to_string(d), w);
@@ -253,7 +258,12 @@ int insert_tp_time(T& scube, string filename, int type) {					// int data_interv
 
 	thread* child = new thread(count_num, &datanum, &total);
 
+	string line_tp;
 	while (!ifs.eof()) {
+		if (ifs.peek() == '%' || ifs.peek() == '#') {
+			getline(ifs, line_tp);
+			continue;
+		}
 		if (type == 0) {
 			ifs >> s >> d >> w >> t;
 			scube.insert(to_string(s), to_string(d), w);
@@ -308,7 +318,12 @@ int insertbd(T& scube, string filename, int type, int data_interval) {		// int d
 	double kick_time = 0, degdetect_ins_time = 0;
 	double all_kick_time = 0, all_ins_time = 0; 
 	double bd_kick_time = 0, bd_ins_time = 0;
+	string line_bd;
 	while (!ifs.eof()) {
+		if (ifs.peek() == '%' || ifs.peek() == '#') {
+			getline(ifs, line_bd);
+			continue;
+		}
 		if (type == 0) {
 			ifs >> s >> d >> w >> t;
 			scube.insert(to_string(s), to_string(d), w, kick_time, degdetect_ins_time);

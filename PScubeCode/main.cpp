@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
 	
 	switch (dataset) {
 		case 1:
-			dataset_file_path = "..//Dataset//wiki-talk";
+			dataset_file_path = "..//Dataset//wiki-talk//out.wiki_talk_en";
 			input_dir = "..//TestFiles//wiki-talk//input//";
 			output_dir = "..//TestFiles//wiki-talk//output//";
 			dataset_name = "wiki-talk";
@@ -139,7 +139,7 @@ int main(int argc, char* argv[]) {
 			depth = 3536;
 			break;
 		case 2:
-			dataset_file_path = "..//Dataset//stackoverflow";
+			dataset_file_path = "..//Dataset//sx-stackoverflow//out.sx-stackoverflow";
 			input_dir = "..//TestFiles//stackoverflow//input//";
 			output_dir = "..//TestFiles//stackoverflow//output//";
 			dataset_name = "stackoverflow";
@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
 			depth = 5656;
 			break;
 		case 3:
-			dataset_file_path = "..//Dataset//dbpedia";
+			dataset_file_path = "..//Dataset//dbpedia-link//out.dbpedia-link";
 			input_dir = "..//TestFiles//dbpedia//input//";
 			output_dir = "..//TestFiles//dbpedia//output//";
 			dataset_name = "dbpedia";
@@ -327,21 +327,18 @@ int main(int argc, char* argv[]) {
 	cout << endl << "This program lasts for " << main_time / 60.0 << " min" << endl;
 #endif
 
-	// 1. 创建高速公开引擎 (Fast Path) - 可以采用较小的配置或者原生 Scube
-	Scube* fastEngine = new ScubeKick(width, depth, fingerprint_length, kick_times, slot_nums, exp_deg, ignore_bits, reserved_bits, alpha);
+	// TODO: P-Scube visibility-aware routing (placeholder)
+	// {
+	// 	Scube* fastEngine = new ScubeKick(width, depth, fingerprint_length, kick_times, slot_nums, exp_deg, ignore_bits, reserved_bits, alpha);
+	// 	Scube* secureEngine = new ScubeKick(width, depth, fingerprint_length, kick_times, slot_nums, exp_deg, ignore_bits, reserved_bits, alpha);
+	// 	double gamma_priv = 0.005;
+	// 	uint32_t current_window = window;
+	// 	Scube* pscube = new VisibilityAwareScube(width, depth, fingerprint_length, gamma_priv, current_window, fastEngine, secureEngine);
+	// 	// ... insert, query, cleanup ...
+	// 	delete pscube;
+	// 	delete fastEngine;
+	// 	delete secureEngine;
+	// }
 
-	// 2. 创建隐私保护引擎 (Secure Path) - P-Scube 配置
-	Scube* secureEngine = new ScubeKick(width, depth, fingerprint_length, kick_times, slot_nums, exp_deg, ignore_bits, reserved_bits, alpha);
-
-	// 3. 设定动态隐私参数
-	double gamma_priv = 0.005; // 超过窗口总量 0.5% 的节点被视为敏感 Hub
-	uint32_t current_window = window; // 这里引用您在命令行解析的 window 变量
-
-	// 4. 将系统接管权交给我们的“可见性感知路由器”
-	Scube* scube = new VisibilityAwareScube(width, depth, fingerprint_length, gamma_priv, current_window, fastEngine, secureEngine);
-
-#if defined(DEBUG)
-	cout << "~~~~~~~~~~~~~~~~~~ Init Visibility-Aware P-Scube Router ~~~~~~~~~~~~~~~~~~" << endl;
-#endif
 	return 0;
 }
