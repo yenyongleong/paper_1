@@ -1,0 +1,74 @@
+=== Scube privacy demo (simplified report) ===
+Config: matrix 900x900, ignore_bits=2, exp_deg=500.0000 (old demo used 3000x3000 + ignore_bits=10, so addr stayed ~2 for everyone)
+
+--- Graph ---
+Nodes 5000 | Edges 903858 | Fill 55.7937%
+Degree: min 2 med 19 mean 180.7716 p90 579 max 2261
+True hubs: top-50 by real out-degree, cutoff degree >= 1978
+
+--- 0) Why it leaks (one line) ---
+High-degree nodes get larger addr -> query scans more matrix rows -> slower.
+
+--- Addr vs degree (by 20% buckets) ---
+bucket | deg min-max    | avg addr | max addr | count(addr>2)
+-------+----------------+----------+----------+----------------
+  Q1   | [2,4] |   2.0000 |        2 | 0/1000
+  Q2   | [4,10] |   2.0000 |        2 | 0/1000
+  Q3   | [10,36] |   2.0010 |        3 | 1/1000
+  Q4   | [36,191] |   2.5290 |        6 | 371/1000
+  Q5   | [191,2261] |  15.6380 |       48 | 1000/1000
+
+Hub avg addr 40.8000 | non-hub avg 4.4703 | ratio 9.1269x
+Correlation r: degree-addr 0.9928 | addr-latency 0.9928 | degree-latency 0.9872
+
+--- 1) Attack: find hubs by query return value ---
+Idea: sort all nodes by nodeWeightQuery(); big hubs rank on top.
+Top 10 by returned weight (rank id ret true_deg addr us hub?):
+  1 2456 2261 2261 45 23.1000us HUB
+  2 1016 2236 2236 44 21.4000us HUB
+  3 2644 2234 2234 44 22.5500us HUB
+  4 2926 2228 2228 44 21.9000us HUB
+  5 145 2197 2197 44 21.1000us HUB
+  6 190 2191 2191 42 20.3000us HUB
+  7 676 2189 2189 45 23.4500us HUB
+  8 2505 2182 2182 39 20.2000us HUB
+  9 4091 2182 2182 48 22.8500us HUB
+  10 760 2178 2178 43 22.5000us HUB
+Precision@K = hits in top-K / K | Recall = hits / 50 true hubs:
+  K=10  Prec 100.0000% (10/10)  Rec 20.0000% (10/50)
+  K=20  Prec 100.0000% (20/20)  Rec 40.0000% (20/50)
+  K=50  Prec 100.0000% (50/50)  Rec 100.0000% (50/50)
+  K=100  Prec 50.0000% (50/100)  Rec 100.0000% (50/50)
+Note: Prec@100 caps at 50% if only 50 hubs exist (50/100).
+Avg rel error hub 0.0000% | non-hub 0.0404%
+
+--- 2) Attack: guess if an edge exists ---
+Idea: edgeWeightQuery(src,dst)>0 means "probably exists" (100 real + 100 fake each group).
+Source is hub:    Rec 100.0000% FPR 0.0000%  (TP FN FP TN = 50 0 0 50)
+Source not hub:   Rec 100.0000% FPR 0.0000%  (TP FN FP TN = 50 0 0 50)
+First 6 probes (src->dst real? hub_src? qry):
+  3527->3788 real=y hub_src=n qry=1
+  483->4951 real=n hub_src=y qry=0
+  4293->2573 real=n hub_src=n qry=0
+  4120->3806 real=n hub_src=y qry=0
+  2175->3946 real=y hub_src=y qry=1
+  1850->1267 real=n hub_src=y qry=0
+
+--- 3) Attack: timing only (no need to trust the returned number) ---
+Idea: slow query ~= high addr ~= high degree.
+Avg latency us (repeat 20): hub 20.9010 | non-hub 2.3281 | ratio 8.9777x
+r: degree-addr 0.9928 addr-latency 0.9928 degree-latency 0.9872
+Latency by degree bucket (x = how many times slower than Q1, the lowest-deg bucket):
+  Q1 deg[2,4] addr_avg 2.0000 latency_us 0.9846 x1.0000
+  Q2 deg[4,10] addr_avg 2.0000 latency_us 1.0167 x1.0326
+  Q3 deg[10,36] addr_avg 2.0010 latency_us 1.0796 x1.0964
+  Q4 deg[36,191] addr_avg 2.5290 latency_us 1.4175 x1.4395
+  Q5 deg[191,2261] addr_avg 15.6380 latency_us 8.0707 x8.1965
+
+Classify hub if latency > 11.6146 us: Prec 20.7469% Rec 100.0000% Acc 96.1800%
+
+--- Bottom line ---
+Skew-aware addr makes hubs use more rows -> higher return values AND slower queries.
+This run: hub/non-hub addr ratio 9.1269x | latency ratio 8.9777x | Prec@50 100.0000%
+Old loose demo (big matrix + ignore_bits=10): everyone addr~2 -> almost no timing gap.
+
