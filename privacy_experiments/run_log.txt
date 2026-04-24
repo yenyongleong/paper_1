@@ -1,0 +1,22 @@
+
+=== stackoverflow: loading up to 150,000 edges ===
+[stackoverflow] nodes(out-deg>0)=12,707  edges=150,000
+[stackoverflow] attack node sample size: 3000
+  [stackoverflow/TCM] building... build=0.6s  running attacks...
+     P@50=0.58  ARE_top500=2.129  r(deg,t)=0.000  edge_AUC=0.956  FPR@0=0.068
+  [stackoverflow/GSS] building... build=0.5s  running attacks...
+     P@50=1.00  ARE_top500=0.000  r(deg,t)=0.000  edge_AUC=1.000  FPR@0=0.000
+  [stackoverflow/Scube] building... build=2.0s  running attacks...
+     P@50=1.00  ARE_top500=0.000  r(deg,t)=0.997  edge_AUC=1.000  FPR@0=0.000
+[stackoverflow] results -> /Volumes/external_disk_macos /thesis/paper_1/privacy_experiments/results/results_stackoverflow.json
+
+=== wiki-talk: loading up to 150,000 edges ===
+[wiki-talk] nodes(out-deg>0)=21,544  edges=150,000
+[wiki-talk] attack node sample size: 3000
+  [wiki-talk/TCM] building... build=0.6s  running attacks...
+     P@50=0.80  ARE_top500=2.223  r(deg,t)=0.000  edge_AUC=0.998  FPR@0=0.004
+  [wiki-talk/GSS] building... build=0.5s  running attacks...
+     P@50=1.00  ARE_top500=0.001  r(deg,t)=0.000  edge_AUC=1.000  FPR@0=0.000
+  [wiki-talk/Scube] building... build=8.0s  running attacks...
+     P@50=1.00  ARE_top500=0.001  r(deg,t)=0.905  edge_AUC=1.000  FPR@0=0.000
+[wiki-talk] results -> /Volumes/external_disk_macos /thesis/paper_1/privacy_experiments/results/results_wiki-talk.json
